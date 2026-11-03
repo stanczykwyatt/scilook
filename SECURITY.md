@@ -20,7 +20,7 @@ Please report security problems privately through **Security → Report a vulner
 
 ## Hostile files
 
-The HDF5 reader caps each read, the work per preview and how far compressed data may unpack, and refuses loops in a file's structure. The MATLAB and NumPy readers check every size against the data actually there. MATLAB v5 and NumPy files over 256 MB aren't read whole; the preview says so. A file that's damaged or built to cause trouble gets a page saying it couldn't be read.
+The HDF5 reader caps each read, the work per preview and how far compressed data may unpack, and refuses loops in a file's structure. The MATLAB and NumPy readers check every size against the data actually there, and everything compressed inside one file shares a single 256 MB unpacking budget. MATLAB v5 and NumPy files over 256 MB aren't read at all; the preview says so. Files under that limit are read whole, so a preview can briefly use a few times the file's size in memory. A file that's damaged or built to cause trouble gets a page saying it couldn't be read.
 
 ## The signature
 

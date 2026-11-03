@@ -46,12 +46,14 @@ public final class Renderer {
         // read(offset, length) hands back a Uint8Array of exactly those bytes.
         let read: @convention(block) (Double, Double) -> JSValue? = { [weak self] offset, length in
             guard let current = JSContext.current() else { return nil }
-            let start = Int(offset)
-            let count = Int(length)
-            guard start >= 0, count >= 0, count <= Renderer.maxRead, start + count <= size else {
+            // Check the numbers before converting them: NaN, infinities or huge values would trap.
+            guard offset.isFinite, length.isFinite, offset >= 0, length >= 0, offset.rounded() == offset, length.rounded() == length,
+                  offset <= Double(size), length <= Double(Renderer.maxRead), Int(length) <= size - Int(offset) else {
                 current.exception = JSValue(newErrorFromMessage: "Read past the end of the file.", in: current)
                 return nil
             }
+            let start = Int(offset)
+            let count = Int(length)
             do {
                 try handle.seek(toOffset: UInt64(start))
                 let data = try handle.read(upToCount: count) ?? Data()

@@ -139,15 +139,37 @@ export function plan(dims) {
   return { kind: "lines", start: dims.map(() => 0), count: dims.length === 2 ? [n, lines] : [n], n, lines, note: dims[0] > n ? `the first ${n} of ${dims[0]}` : "" };
 }
 
+/** The row-major block at `start` of size `count`, out of a whole array shaped `dims`. */
+export function block(values, dims, start, count) {
+  const strides = dims.map((_, i) => product(dims.slice(i + 1)));
+  const n = product(count);
+  const out = new Array(n);
+  const index = count.map(() => 0);
+  for (let k = 0; k < n; k++) {
+    let at = 0;
+    for (let d = 0; d < dims.length; d++) at += (start[d] + index[d]) * strides[d];
+    out[k] = values[at];
+    for (let d = count.length - 1; d >= 0; d--) {
+      if (++index[d] < count[d]) break;
+      index[d] = 0;
+    }
+  }
+  return out;
+}
+
 const num = (v) => (typeof v === "bigint" ? Number(v) : typeof v === "boolean" ? Number(v) : Number(v));
 
 function linesSvg(values, p) {
   const W = 640;
   const H = 220;
-  const ys = Array.from(values, num).filter(Number.isFinite);
-  if (!ys.length) return "";
-  let lo = Math.min(...ys);
-  let hi = Math.max(...ys);
+  // A loop, not Math.min(...values): spreading a big array overflows the stack.
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = 0; i < values.length; i++) {
+    const v = num(values[i]);
+    if (Number.isFinite(v)) (lo = Math.min(lo, v)), (hi = Math.max(hi, v));
+  }
+  if (!Number.isFinite(lo)) return "";
   if (lo === hi) (lo -= 1), (hi += 1);
   const colors = ["#3b6fb6", "#69aee0", "#9b7fd1", "#3aa39a"];
   let paths = "";
@@ -330,12 +352,25 @@ export async function preview(source) {
         }
         return page({ title: name, subtitle: sub(kind === "npz" ? "NumPy .npz" : "MATLAB 5.0 MAT-file"), message: "This file is too big to read in a preview. Open it in dropslice or Python to see inside." });
       }
-      const bytes = await read(0, size);
+      // Read whole without an extra copy, and give every compressed piece one shared budget, so
+      // many small entries can't each unpack to the limit.
+      const bytes = new Uint8Array(await source.read(0, size));
+      let budget = WHOLE_LIMIT;
+      const spend = (out) => {
+        budget -= out.length;
+        if (budget < 0) throw new Error("This file unpacks to more than a preview will read.");
+        return out;
+      };
       const tree =
-        kind === "npy" ? npyGroup(name, bytes) : kind === "npz" ? await npzGroup(name, bytes, async (b, n) => inflateRaw(b, Math.min(n ?? WHOLE_LIMIT, WHOLE_LIMIT))) : await parseMat5(name, bytes, async (b) => inflateZlib(b, WHOLE_LIMIT));
+        kind === "npy"
+          ? npyGroup(name, bytes)
+          : kind === "npz"
+            ? await npzGroup(name, bytes, async (b, n) => spend(inflateRaw(b, Math.min(n ?? budget, budget))))
+            : await parseMat5(name, bytes, async (b) => spend(inflateZlib(b, budget)));
       const { rows, candidates } = treeRows(tree);
       const facts = kind === "mat5" && tree.attrs.header ? [["Header", tree.attrs.header]] : null;
-      const plot = await plotHtml(pick(candidates.map((c) => ({ ...c, path: c.node.path }))), async (c) => (await c.node.read(null)).values);
+      // Cut the planned block out of the whole array, so the layout matches an HDF5 slice.
+      const plot = await plotHtml(pick(candidates.map((c) => ({ ...c, path: c.node.path }))), async (c, p) => block((await c.node.read(null)).values, c.dims, p.start, p.count));
       return page({ title: name, subtitle: sub(kind === "npy" ? "NumPy .npy" : kind === "npz" ? "NumPy .npz" : "MATLAB 5.0 MAT-file"), facts, plot, rows });
     }
     return page({ title: name, subtitle: sub("Unknown format"), message: "SciLook doesn't recognize this file. It previews NWB, HDF5, MATLAB .mat and NumPy .npy and .npz files." });

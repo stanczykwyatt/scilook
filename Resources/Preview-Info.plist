@@ -21,6 +21,8 @@
 			<key>QLSupportedContentTypes</key>
 			<array>
 				<string>org.hdfgroup.hdf5</string>
+				<!-- Other apps declare .h5, .hdf5 and .hdf under this identifier; theirs wins when installed. -->
+				<string>org.hdf5</string>
 				<string>org.nwb.nwb</string>
 				<string>com.mathworks.mat</string>
 				<string>org.numpy.npy</string>

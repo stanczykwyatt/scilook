@@ -35,7 +35,9 @@ class LiteDecoder {
         if ((b[i + k] & 0xc0) !== 0x80) ok = false;
         else cp = (cp << 6) | (b[i + k] & 0x3f);
       }
-      if (!ok) {
+      // Overlong forms, surrogates and code points past U+10FFFF are invalid, as in Node.
+      const min = [0, 0, 0x80, 0x800, 0x10000][n];
+      if (!ok || cp < min || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff)) {
         s += "�";
         i++;
         continue;

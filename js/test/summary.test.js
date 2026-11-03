@@ -99,3 +99,39 @@ test("the Buffer and TextDecoder stand-ins behave like Node's", () => {
   assert.equal(new LiteDecoder().decode(new Uint8Array([0xe6, 0xb5, 0xb7, 0xff])), "海�");
   assert.equal(formatBytes(309175), "309 KB");
 });
+
+const npyBytes = (shape, values) => {
+  let text = `{'descr': '<f8', 'fortran_order': False, 'shape': (${shape.join(", ")},), }`;
+  while ((10 + text.length + 1) % 64) text += " ";
+  text += "\n";
+  const out = new Uint8Array(10 + text.length + values.length * 8);
+  out.set([0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 1, 0]);
+  new DataView(out.buffer).setUint16(8, text.length, true);
+  out.set(new TextEncoder().encode(text), 10);
+  new Float64Array(out.buffer, 10 + text.length).set(values);
+  return out;
+};
+const memory = (name, bytes) => ({ name, size: bytes.length, read: async (o, l) => bytes.slice(o, o + l) });
+
+test("NumPy arrays plot the block that was planned, like HDF5 slices", async () => {
+  // 100 rows × 8 columns, column c holding c: the plot shows the first 4 columns as flat lines.
+  const values = Array.from({ length: 800 }, (_, i) => i % 8);
+  const html = await preview(memory("wide.npy", npyBytes([100, 8], values)));
+  assert.match(html, /min 0<\/span><span>max 3<\/span>/);
+  const flat = [...html.matchAll(/<path d="([^"]+)"/g)].map((m) => new Set([...m[1].matchAll(/,([\d.]+)/g)].map((x) => x[1])).size);
+  assert.deepEqual(flat, [1, 1, 1, 1]);
+});
+
+test("a million-value array plots without overflowing the stack", async () => {
+  const html = await preview(memory("big.npy", npyBytes([1e6], Array.from({ length: 1e6 }, (_, i) => i))));
+  assert.match(html, /the first 1500 of 1000000/);
+  assert.doesNotMatch(html, /Couldn&#39;t plot/);
+});
+
+test("text that isn't valid UTF-8 becomes a replacement mark, not a failure", () => {
+  const d = new LiteDecoder();
+  assert.equal(d.decode(new Uint8Array([0xf4, 0x90, 0x80, 0x80])), "����");
+  assert.equal(d.decode(new Uint8Array([0xc0, 0x80])), "��");
+  assert.equal(d.decode(new Uint8Array([0xed, 0xa0, 0x80])), "���");
+  assert.throws(() => inflateRaw(new Uint8Array([1]), NaN), /No room/);
+});

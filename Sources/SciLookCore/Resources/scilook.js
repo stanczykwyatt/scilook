@@ -34,7 +34,8 @@
           if ((b[i + k] & 192) !== 128) ok = false;
           else cp = cp << 6 | b[i + k] & 63;
         }
-        if (!ok) {
+        const min = [0, 0, 128, 2048, 65536][n];
+        if (!ok || cp < min || cp > 1114111 || cp >= 55296 && cp <= 57343) {
           s += "\uFFFD";
           i++;
           continue;
@@ -134,6 +135,7 @@
   var FIXED_LIT = table(Array.from({ length: 288 }, (_, i) => i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8));
   var FIXED_DIST = table(Array(30).fill(5));
   function inflateRaw(input, limit = Infinity) {
+    if (!(limit >= 0)) throw new InflateError("No room to unpack compressed data.");
     let pos = 0;
     let bit = 0;
     let out = new Uint8Array(Math.min(Math.max(input.length * 4, 1024), limit === Infinity ? 1 << 30 : limit));
@@ -608,9 +610,9 @@
         const pre = await this.structure(address, prefix + sizeBytes);
         const chunkSize = Number(this.cursor(pre, prefix).uint(sizeBytes));
         prefix += sizeBytes;
-        const block = await this.structure(address + prefix, chunkSize);
+        const block2 = await this.structure(address + prefix, chunkSize);
         const queue = [];
-        this.parseV2Messages(block, 0, chunkSize, flags, messages, queue);
+        this.parseV2Messages(block2, 0, chunkSize, flags, messages, queue);
         while (queue.length) {
           const { at, length } = queue.shift();
           const more = await this.structure(at, length);
@@ -629,15 +631,15 @@
         let seen = 0;
         while (queue.length && seen < count) {
           const { at, length } = queue.shift();
-          const block = await this.structure(at, length);
-          const m = this.cursor(block);
-          while (m.at + 8 <= block.length && seen < count) {
+          const block2 = await this.structure(at, length);
+          const m = this.cursor(block2);
+          while (m.at + 8 <= block2.length && seen < count) {
             seen++;
             const type = m.u16();
             const msgSize = m.u16();
             const msgFlags = m.u8();
             m.skip(3);
-            const data = m.bytes(Math.min(msgSize, block.length - m.at));
+            const data = m.bytes(Math.min(msgSize, block2.length - m.at));
             this.collectMessage(type, msgFlags, data, messages, queue);
           }
         }
@@ -645,8 +647,8 @@
       return messages;
     }
     /** Messages from `from` up to `end`; continuation blocks end with a checksum, which callers leave out. */
-    parseV2Messages(block, from, end, headerFlags, messages, queue) {
-      const c = this.cursor(block, from);
+    parseV2Messages(block2, from, end, headerFlags, messages, queue) {
+      const c = this.cursor(block2, from);
       const headerLength = 4 + (headerFlags & 4 ? 2 : 0);
       while (c.at + headerLength <= end) {
         const type = c.u8();
@@ -660,10 +662,10 @@
     collectMessage(type, flags, data, messages, queue) {
       if (type === 16) {
         const c = this.cursor(data);
-        const block = { at: c.addr(), length: c.len() };
+        const block2 = { at: c.addr(), length: c.len() };
         queue.blocks = (queue.blocks ?? 0) + 1;
-        if (queue.blocks > 4096 || block.length > 64 * 1024 * 1024) throw new Hdf5Error("An object header is damaged.");
-        queue.push(block);
+        if (queue.blocks > 4096 || block2.length > 64 * 1024 * 1024) throw new Hdf5Error("An object header is damaged.");
+        queue.push(block2);
         return;
       }
       if (type !== 0) messages.push({ type, flags, data });
@@ -1052,8 +1054,8 @@
       const indirectRows = rows - directRows;
       const prefix = 4 + 1 + this.offsetSize + heap.offsetBytes;
       const entries = directRows * heap.width + indirectRows * heap.width;
-      const block = await this.structure(address, prefix + entries * this.offsetSize);
-      const c = this.cursor(block, prefix);
+      const block2 = await this.structure(address, prefix + entries * this.offsetSize);
+      const c = this.cursor(block2, prefix);
       const addresses = [];
       for (let i = 0; i < entries; i++) addresses.push(c.addr());
       let start = base;
@@ -1592,13 +1594,13 @@
     let i = 0;
     let words = data.length >> 1;
     while (words) {
-      let block = words > 360 ? 360 : words;
-      words -= block;
+      let block2 = words > 360 ? 360 : words;
+      words -= block2;
       do {
         sum1 += data[i] << 8 | data[i + 1];
         i += 2;
         sum2 += sum1;
-      } while (--block);
+      } while (--block2);
       sum1 = (sum1 & 65535) + (sum1 >>> 16);
       sum2 = (sum2 & 65535) + (sum2 >>> 16);
     }
@@ -2212,14 +2214,33 @@
     const lines = dims.length === 2 ? Math.min(dims[1], 4) : 1;
     return { kind: "lines", start: dims.map(() => 0), count: dims.length === 2 ? [n, lines] : [n], n, lines, note: dims[0] > n ? `the first ${n} of ${dims[0]}` : "" };
   }
+  function block(values, dims, start, count) {
+    const strides = dims.map((_, i) => product3(dims.slice(i + 1)));
+    const n = product3(count);
+    const out = new Array(n);
+    const index = count.map(() => 0);
+    for (let k = 0; k < n; k++) {
+      let at = 0;
+      for (let d = 0; d < dims.length; d++) at += (start[d] + index[d]) * strides[d];
+      out[k] = values[at];
+      for (let d = count.length - 1; d >= 0; d--) {
+        if (++index[d] < count[d]) break;
+        index[d] = 0;
+      }
+    }
+    return out;
+  }
   var num = (v) => typeof v === "bigint" ? Number(v) : typeof v === "boolean" ? Number(v) : Number(v);
   function linesSvg(values, p) {
     const W = 640;
     const H = 220;
-    const ys = Array.from(values, num).filter(Number.isFinite);
-    if (!ys.length) return "";
-    let lo = Math.min(...ys);
-    let hi = Math.max(...ys);
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 0; i < values.length; i++) {
+      const v = num(values[i]);
+      if (Number.isFinite(v)) lo = Math.min(lo, v), hi = Math.max(hi, v);
+    }
+    if (!Number.isFinite(lo)) return "";
     if (lo === hi) lo -= 1, hi += 1;
     const colors = ["#3b6fb6", "#69aee0", "#9b7fd1", "#3aa39a"];
     let paths = "";
@@ -2380,11 +2401,17 @@ td.name { white-space: nowrap; } td.note { color: var(--muted); }
           }
           return page({ title: name, subtitle: sub(kind === "npz" ? "NumPy .npz" : "MATLAB 5.0 MAT-file"), message: "This file is too big to read in a preview. Open it in dropslice or Python to see inside." });
         }
-        const bytes = await read(0, size);
-        const tree = kind === "npy" ? npyGroup(name, bytes) : kind === "npz" ? await npzGroup(name, bytes, async (b, n) => inflateRaw(b, Math.min(n ?? WHOLE_LIMIT, WHOLE_LIMIT))) : await parseMat5(name, bytes, async (b) => inflateZlib(b, WHOLE_LIMIT));
+        const bytes = new Uint8Array(await source.read(0, size));
+        let budget = WHOLE_LIMIT;
+        const spend = (out) => {
+          budget -= out.length;
+          if (budget < 0) throw new Error("This file unpacks to more than a preview will read.");
+          return out;
+        };
+        const tree = kind === "npy" ? npyGroup(name, bytes) : kind === "npz" ? await npzGroup(name, bytes, async (b, n) => spend(inflateRaw(b, Math.min(n ?? budget, budget)))) : await parseMat5(name, bytes, async (b) => spend(inflateZlib(b, budget)));
         const { rows, candidates } = treeRows(tree);
         const facts = kind === "mat5" && tree.attrs.header ? [["Header", tree.attrs.header]] : null;
-        const plot = await plotHtml(pick(candidates.map((c) => ({ ...c, path: c.node.path }))), async (c) => (await c.node.read(null)).values);
+        const plot = await plotHtml(pick(candidates.map((c) => ({ ...c, path: c.node.path }))), async (c, p) => block((await c.node.read(null)).values, c.dims, p.start, p.count));
         return page({ title: name, subtitle: sub(kind === "npy" ? "NumPy .npy" : kind === "npz" ? "NumPy .npz" : "MATLAB 5.0 MAT-file"), facts, plot, rows });
       }
       return page({ title: name, subtitle: sub("Unknown format"), message: "SciLook doesn't recognize this file. It previews NWB, HDF5, MATLAB .mat and NumPy .npy and .npz files." });

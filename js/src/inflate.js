@@ -30,6 +30,7 @@ const FIXED_LIT = table(Array.from({ length: 288 }, (_, i) => (i < 144 ? 8 : i <
 const FIXED_DIST = table(Array(30).fill(5));
 
 export function inflateRaw(input, limit = Infinity) {
+  if (!(limit >= 0)) throw new InflateError("No room to unpack compressed data.");
   let pos = 0;
   let bit = 0;
   let out = new Uint8Array(Math.min(Math.max(input.length * 4, 1024), limit === Infinity ? 1 << 30 : limit));
