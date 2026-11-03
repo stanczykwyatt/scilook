@@ -1,0 +1,10 @@
+name: Idea
+description: A format, a view or a feature you'd like.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+    validations:
+      required: true

@@ -1,0 +1,20 @@
+name: A file won't open or shows wrong values
+description: Something in a file isn't shown right, or Quick Look shows nothing.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: The file type, what you expected and what you saw. If you can share a small file that shows it (made-up data is perfect), attach it. Please don't attach private data.
+    validations:
+      required: true
+  - type: input
+    id: writer
+    attributes:
+      label: What wrote the file?
+      description: For example "h5py 3.12", "MATLAB R2024b save", "numpy 2.1", "zarr-python 3".
+  - type: input
+    id: browser
+    attributes:
+      label: macOS version

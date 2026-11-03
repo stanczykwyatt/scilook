@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Test the preview code in Node
+        working-directory: js
+        run: |
+          npm ci --ignore-scripts
+          npm test
+
+      - name: Check the bundled preview code matches the source
+        run: |
+          (cd js && node build.mjs)
+          if ! git diff --quiet -- Sources/SciLookCore/Resources/scilook.js; then
+            echo "::error::scilook.js is out of date. Run scripts/build-core.sh and commit it."
+            exit 1
+          fi
+
+      - name: Test the preview through JavaScriptCore
+        run: swift test
+
+      - name: Build the app
+        run: scripts/build-app.sh
+
+      - name: Check it only reads, with no permissions beyond the sandbox
+        run: node scripts/check-rules.mjs

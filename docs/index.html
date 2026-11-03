@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SciLook: Quick Look for NWB, HDF5, MATLAB .mat and NumPy files on the Mac</title>
+  <meta name="description" content="SciLook is a free, open-source Quick Look extension for the Mac. Select an NWB, HDF5, MATLAB .mat, NumPy .npy or .npz file in Finder and press Space to see its structure, its NWB session facts and a plot. Read-only and sandboxed.">
+  <meta name="keywords" content="quick look hdf5, quick look nwb, quick look mat file, preview npy mac, hdf5 preview finder, matlab file preview mac, numpy quick look">
+  <link rel="canonical" href="https://stanczykwyatt.github.io/scilook/">
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="site.css">
+  <meta name="theme-color" content="#0d0f12">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SciLook">
+  <meta property="og:description" content="Quick Look for scientific data on your Mac: press Space on NWB, HDF5, MATLAB and NumPy files.">
+  <meta property="og:url" content="https://stanczykwyatt.github.io/scilook/">
+  <meta property="og:image" content="https://stanczykwyatt.github.io/scilook/social.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SciLook",
+    "description": "A Quick Look extension for macOS that previews NWB, HDF5, MATLAB .mat and NumPy .npy and .npz files with their structure, NWB session facts and a plot.",
+    "operatingSystem": "macOS 14 or later",
+    "applicationCategory": "DeveloperApplication",
+    "url": "https://stanczykwyatt.github.io/scilook/",
+    "downloadUrl": "https://github.com/stanczykwyatt/scilook/releases/latest/download/SciLook.zip",
+    "softwareVersion": "0.1.0",
+    "license": "https://opensource.org/licenses/MIT",
+    "isAccessibleForFree": true,
+    "featureList": ["Quick Look previews of NWB and HDF5 files of any size", "MATLAB v5 and v7.3 .mat previews", "NumPy .npy and .npz previews", "NWB session and subject facts", "A line plot or heatmap of one array", "Sandboxed and read-only"],
+    "author": { "@type": "Person", "name": "Wyatt Stanczyk", "url": "https://wyattstanczyk.com" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "How do I preview an HDF5 or NWB file in Finder?", "acceptedAnswer": { "@type": "Answer", "text": "Install SciLook, open it once, then select the file in Finder and press Space. Quick Look shows the file's groups and datasets with their shapes and types, NWB session and subject facts, and a plot of the recorded data. Big files are read a little at a time, so a 10 GB recording previews quickly." } },
+      { "@type": "Question", "name": "Can I preview a MATLAB .mat file on a Mac without MATLAB?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. SciLook previews MATLAB v5 .mat files (the default for save) and v7.3 files, with each variable's size and class, structs and cell arrays, and a plot." } },
+      { "@type": "Question", "name": "Does Quick Look work with NumPy .npy files?", "acceptedAnswer": { "@type": "Answer", "text": "With SciLook it does: .npy and .npz files show their arrays' shapes and types and a plot. Pickled object arrays are never loaded, because unpickling can run code." } },
+      { "@type": "Question", "name": "Is SciLook safe?", "acceptedAnswer": { "@type": "Answer", "text": "It's sandboxed with no permissions: Quick Look gives it read access to the one file being previewed. It never writes files, has no network access and runs no other programs." } }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="scene" aria-hidden="true"></div>
+  <main class="glass">
+    <div class="edge" aria-hidden="true"></div>
+    <div class="content">
+      <nav class="bar" aria-label="Site">
+        <a class="label" href="https://github.com/stanczykwyatt/scilook/releases/tag/v0.1.0">SciLook · v0.1</a>
+        <a class="label" href="https://github.com/stanczykwyatt/scilook">github ↗</a>
+      </nav>
+      <section class="center">
+        <div class="title">
+          <img class="icon" src="icon.png" alt="" width="76" height="76">
+          <h1>SciLook</h1>
+        </div>
+        <p class="lede">Quick Look for scientific data. Press Space on an NWB, HDF5, MATLAB or NumPy file in Finder and see what's inside, with a plot.</p>
+        <img class="shot" src="demo.gif" width="720" height="450" alt="Drawn demo: in a Finder list, recording.h5 is selected and Space shows its preview with a four-channel line plot and its groups; then behavior.mat shows its variables and a heatmap.">
+        <div class="actions" style="margin-top: 22px">
+          <a class="button solid" href="https://github.com/stanczykwyatt/scilook/releases/latest/download/SciLook.zip">Download for Mac</a>
+          <a class="button" href="https://github.com/stanczykwyatt/scilook">
+            <svg class="star" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.4l1.95 4.02 4.43.6-3.23 3.08.79 4.4L8 11.38 4.06 13.5l.79-4.4L1.62 6.02l4.43-.6z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+        <p class="label">free · open source · macOS 14+ · sandboxed · no permissions · no internet access</p>
+      </section>
+      <section class="section" aria-labelledby="what-title">
+        <h2 id="what-title">Press Space and see</h2>
+        <ul class="verdicts">
+          <li class="key"><b>NWB and HDF5:</b> groups, datasets, shapes, types and units, NWB session and subject facts, and a plot of the recorded data. Any size, read a little at a time.</li>
+          <li class="key"><b>MATLAB .mat:</b> v5 and v7.3, with each variable's size and class, structs and cell arrays.</li>
+          <li><b>NumPy .npy and .npz:</b> shapes, types and a plot. Pickles are never loaded.</li>
+          <li><b>Opening the files:</b> for a closer look, <a href="https://stanczykwyatt.github.io/dropslice/">dropslice</a> opens the same files in your browser.</li>
+        </ul>
+      </section>
+      <section class="section" aria-labelledby="faq-title">
+        <h2 id="faq-title">Questions</h2>
+        <details><summary>How do I preview an HDF5 or NWB file in Finder?</summary><p>Install SciLook, open it once, then select the file in Finder and press Space. Quick Look shows the file's groups and datasets with their shapes and types, NWB session and subject facts, and a plot of the recorded data. Big files are read a little at a time, so a 10 GB recording previews quickly.</p></details>
+        <details><summary>Can I preview a MATLAB .mat file on a Mac without MATLAB?</summary><p>Yes. SciLook previews MATLAB v5 .mat files (the default for save) and v7.3 files, with each variable's size and class, structs and cell arrays, and a plot.</p></details>
+        <details><summary>Does Quick Look work with NumPy .npy files?</summary><p>With SciLook it does: .npy and .npz files show their arrays' shapes and types and a plot. Pickled object arrays are never loaded, because unpickling can run code.</p></details>
+        <details><summary>Is SciLook safe?</summary><p>It's sandboxed with no permissions: Quick Look gives it read access to the one file being previewed. It never writes files, has no network access and runs no other programs.</p></details>
+      </section>
+      <footer class="foot">
+        <p>Also free: <a href="https://stanczykwyatt.github.io/dropslice/">dropslice</a>, <a href="https://stanczykwyatt.github.io/brainhound/">brainhound</a>, <a href="https://stanczykwyatt.github.io/who-stole-my-focus/">Who Stole My Focus</a>, <a href="https://stanczykwyatt.github.io/show-desktop/">Show Desktop</a> and <a href="https://stanczykwyatt.github.io/copy-2fa/">Copy 2FA</a>.</p>
+        <p>This site has no cookies or tracking. MIT License. Not affiliated with Apple, the HDF Group, MathWorks, NumPy or NWB. MATLAB is a registered trademark of The MathWorks, Inc.; Quick Look and Finder are Apple's.</p>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>
