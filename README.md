@@ -50,6 +50,8 @@ Two-dimensional grids and stacks of images show as a heatmap; everything else as
 
 ## Install
 
+> **Early release:** the preview code is tested, and the extension bundle, its signatures and its file types are checked on every build, but SciLook hasn't been loaded by Quick Look on a real Mac yet. If Space still shows the plain preview after you've opened the app once, please [open an issue](https://github.com/stanczykwyatt/scilook/issues) with your macOS version and the file type.
+
 1. Download [SciLook.zip](https://github.com/stanczykwyatt/scilook/releases/latest/download/SciLook.zip), unzip it, and move **SciLook** to **Applications**.
 2. Open it once. SciLook isn't notarized yet, so the first time macOS asks: in **System Settings › Privacy & Security**, choose **Open Anyway**.
 3. Select a file in Finder and press Space. If you see a plain icon instead, turn SciLook on in **System Settings › General › Login Items & Extensions › Quick Look**.
